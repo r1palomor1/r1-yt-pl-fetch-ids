@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YouTube Playlist Viewer</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>YouTube Playlist Viewer (Rabbit R1)</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>YouTube Playlist Viewer</h1>
@@ -21,10 +21,17 @@
   <div id="playlist">Loading playlist...</div>
   <div id="sentinel"></div>
 
-  <!-- Mini Player -->
-  <div id="playerOverlay" role="dialog" aria-modal="true">
+  <!-- Mini Player Overlay -->
+  <div id="playerOverlay" role="dialog" aria-modal="true" aria-label="Now Playing">
     <div id="playerCard">
-      <button id="playerClose" title="Close">✕</button>
+      <div id="playerToolbar">
+        <div id="sizeButtons">
+          <button data-size="small" title="Small">S</button>
+          <button data-size="medium" title="Medium">M</button>
+          <button data-size="large" title="Large">L</button>
+        </div>
+        <button id="playerClose" title="Close">✕</button>
+      </div>
       <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
   </div>

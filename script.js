@@ -1,122 +1,325 @@
-// Storage utility
-const creationStore={
-  async getItem(k){try{if(window.rabbit?.creationStorage?.getItem){const v=await window.rabbit.creationStorage.getItem(k);return v??null;}}catch{}return localStorage.getItem(k);},
-  async setItem(k,v){try{if(window.rabbit?.creationStorage?.setItem){await window.rabbit.creationStorage.setItem(k,v);return;}}catch{}localStorage.setItem(k,v);},
-  async removeItem(k){try{if(window.rabbit?.creationStorage?.removeItem){await window.rabbit.creationStorage.removeItem(k);}}catch{}localStorage.removeItem(k);}
+/***********************
+ * Storage Utility
+ ***********************/
+const creationStore = {
+  async getItem(key) {
+    try {
+      if (window.rabbit?.creationStorage?.getItem) {
+        const v = await window.rabbit.creationStorage.getItem(key);
+        return v ?? null;
+      }
+    } catch {}
+    return localStorage.getItem(key);
+  },
+  async setItem(key, value) {
+    try {
+      if (window.rabbit?.creationStorage?.setItem) {
+        await window.rabbit.creationStorage.setItem(key, value);
+        return;
+      }
+    } catch {}
+    localStorage.setItem(key, value);
+  },
+  async removeItem(key) {
+    try {
+      if (window.rabbit?.creationStorage?.removeItem) {
+        await window.rabbit.creationStorage.removeItem(key);
+      }
+    } catch {}
+    localStorage.removeItem(key);
+  }
 };
 
-// Extract playlist id
-function extractPlaylistId(i){const v=i.trim();if(!v)return"";try{const u=new URL(v);const l=u.searchParams.get("list");if(l)return l;}catch{}return v;}
+/***********************
+ * Playlist ID extractor
+ ***********************/
+function extractPlaylistId(input) {
+  const val = input.trim();
+  if (!val) return "";
+  try {
+    const u = new URL(val);
+    const list = u.searchParams.get("list");
+    if (list) return list;
+  } catch (_) {}
+  return val;
+}
 
-// Fetch XML
-async function fetchXMLPlaylist(id){
-  const feed=`https://www.youtube.com/feeds/videos.xml?playlist_id=${id}`;
-  const proxy=`https://corsproxy.io/?${encodeURIComponent(feed)}`;
-  try{
-    const res=await fetch(proxy);
-    const xmlText=await res.text();
-    const xml=new DOMParser().parseFromString(xmlText,"application/xml");
-    const meta={
-      playlistTitle:xml.querySelector("feed>title")?.textContent||"Untitled Playlist",
-      author:xml.querySelector("author>name")?.textContent||"Unknown"
-    };
-    const items=[...xml.getElementsByTagName("entry")].map(e=>{
-      const id=e.querySelector("yt\\:videoId")?.textContent||[...e.children].find(n=>n.localName==="videoId")?.textContent;
-      const t=e.querySelector("title")?.textContent||"Untitled";
-      const thumb=e.getElementsByTagNameNS("*","thumbnail")[0]?.getAttribute("url");
-      return id?{id,title:t,thumb}:null;
+/***********************
+ * Fetch YouTube XML feed
+ ***********************/
+async function fetchXMLPlaylist(playlistId) {
+  const feed = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
+  const proxy = `https://corsproxy.io/?${encodeURIComponent(feed)}`;
+  try {
+    const response = await fetch(proxy);
+    const xmlText = await response.text();
+    const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+
+    const playlistTitle = xml.querySelector("feed > title")?.textContent || "Untitled Playlist";
+    const author = xml.querySelector("author > name")?.textContent || "Unknown";
+    const entries = Array.from(xml.getElementsByTagName("entry"));
+    const items = entries.map(entry => {
+      const videoIdNode = Array.from(entry.children).find(n => n.localName === "videoId");
+      const titleNode = Array.from(entry.children).find(n => n.localName === "title");
+      const thumbNode = entry.getElementsByTagNameNS("*", "thumbnail")[0];
+      const id = videoIdNode?.textContent?.trim();
+      const title = titleNode?.textContent?.trim() || "Untitled";
+      const thumb = thumbNode?.getAttribute("url");
+      return id ? { id, title, thumb } : null;
     }).filter(Boolean);
-    return{meta,videos:items};
-  }catch(e){console.error(e);return{meta:null,videos:[]};}
-}
-
-// Cache helpers
-async function loadFromCache(id){
-  const mk=`pl_${id}_meta`,vk=`pl_${id}_videos`;
-  const [m,v]=await Promise.all([creationStore.getItem(mk),creationStore.getItem(vk)]);
-  let meta=null,videos=[];
-  try{meta=m?JSON.parse(m):null;}catch{}
-  try{videos=v?JSON.parse(v):[];}catch{}
-  return{meta,videos};
-}
-async function saveToCache(id,m,v){
-  await creationStore.setItem(`pl_${id}_meta`,JSON.stringify(m||null));
-  await creationStore.setItem(`pl_${id}_videos`,JSON.stringify(v||[]));
-}
-
-// State
-const s={playlistId:"",allVideos:[],filtered:null,idx:0,batch:24,busy:false,meta:null,source:"XML"};
-function current(){return s.filtered??s.allVideos;}
-function clearGrid(){playlist.innerHTML="";s.idx=0;}
-function renderNext(){
-  if(s.busy)return;
-  const list=current();if(!list||s.idx>=list.length)return;
-  s.busy=true;
-  const end=Math.min(s.idx+s.batch,list.length);
-  const frag=document.createDocumentFragment();
-  for(const v of list.slice(s.idx,end)){
-    const a=document.createElement("a");
-    a.className="video";a.href="#";a.dataset.vid=v.id;
-    a.innerHTML=`<img class="thumb" src="${v.thumb}" loading="lazy"><div class="title">${v.title}</div>`;
-    a.onclick=e=>{e.preventDefault();openMini(v.id);};
-    frag.append(a);
+    return { meta: { playlistTitle, author }, videos: items };
+  } catch (e) {
+    console.error("❌ XML fetch/parse error:", e);
+    return { meta: null, videos: [] };
   }
-  playlist.append(frag);
-  s.idx=end;s.busy=false;
 }
-function renderAll(reset){if(reset)clearGrid();renderNext();sourceTag.textContent=`Source: ${s.source} — ${(current()||[]).length} videos${s.filtered?" (filtered)":""}`;playlistMeta.textContent=s.meta?`Playlist: ${s.meta.playlistTitle} | By: ${s.meta.author}`:"";}
 
-// Scroll/fallback
-if("IntersectionObserver"in window){
-  new IntersectionObserver(e=>{if(e[0].isIntersecting)renderNext();},{rootMargin:"200px"}).observe(sentinel);
-}else{
-  const btn=document.createElement("button");
-  btn.textContent="Load More";btn.onclick=renderNext;
+/***********************
+ * Cache helpers
+ ***********************/
+async function loadFromCache(playlistId) {
+  const metaKey = `pl_${playlistId}_meta_v1`;
+  const vidsKey = `pl_${playlistId}_videos_v1`;
+  const [metaStr, vidsStr] = await Promise.all([
+    creationStore.getItem(metaKey),
+    creationStore.getItem(vidsKey)
+  ]);
+  let meta = null, videos = [];
+  try { meta = metaStr ? JSON.parse(metaStr) : null; } catch {}
+  try { videos = vidsStr ? JSON.parse(vidsStr) : []; } catch {}
+  return { meta, videos };
+}
+
+async function saveToCache(playlistId, meta, videos) {
+  const metaKey = `pl_${playlistId}_meta_v1`;
+  const vidsKey = `pl_${playlistId}_videos_v1`;
+  await creationStore.setItem(metaKey, JSON.stringify(meta || null));
+  await creationStore.setItem(vidsKey, JSON.stringify(videos || []));
+}
+
+/***********************
+ * State & rendering
+ ***********************/
+const state = {
+  playlistId: "",
+  allVideos: [],
+  filteredVideos: null,
+  renderIndex: 0,
+  batchSize: 24,
+  busy: false,
+  sourceUsed: "XML",
+  meta: null
+};
+function currentList() { return state.filteredVideos ?? state.allVideos; }
+
+function clearGrid() {
+  const container = document.getElementById("playlist");
+  container.innerHTML = "";
+  state.renderIndex = 0;
+}
+
+function renderNextBatch() {
+  if (state.busy) return;
+  const list = currentList();
+  if (!list || state.renderIndex >= list.length) return;
+
+  state.busy = true;
+  const end = Math.min(state.renderIndex + state.batchSize, list.length);
+  const slice = list.slice(state.renderIndex, end);
+  const container = document.getElementById("playlist");
+
+  const html = slice.map(v => `
+    <a class="video" href="#" data-vid="${v.id}" data-title="${encodeURIComponent(v.title)}">
+      <img class="thumb" src="${v.thumb}" loading="lazy" alt="${v.title}">
+      <div class="title">${v.title}</div>
+    </a>
+  `).join("");
+  const temp = document.createElement("div");
+  temp.innerHTML = html;
+  temp.querySelectorAll(".video").forEach(card => {
+    card.addEventListener("click", (e) => {
+      e.preventDefault();
+      openMiniPlayer(card.getAttribute("data-vid"));
+    });
+  });
+  while (temp.firstChild) container.appendChild(temp.firstChild);
+
+  state.renderIndex = end;
+  state.busy = false;
+}
+
+function renderAll(reset=false) {
+  if (reset) clearGrid();
+  renderNextBatch();
+  const src = state.sourceUsed || "XML";
+  const count = (currentList() || []).length;
+  document.getElementById("sourceTag").innerText = 
+    `Source: ${src} — ${count} videos ${state.filteredVideos ? "(filtered)" : ""}`;
+  document.getElementById("playlistMeta").innerText =
+    state.meta ? `Playlist: ${state.meta.playlistTitle} | By: ${state.meta.author}` : "";
+}
+
+/***********************
+ * Infinite scroll + fallback
+ ***********************/
+const sentinel = document.getElementById("sentinel");
+if ("IntersectionObserver" in window) {
+  const io = new IntersectionObserver((entries)=>{
+    if (entries[0].isIntersecting) renderNextBatch();
+  }, {root:null, rootMargin:"200px", threshold:0});
+  io.observe(sentinel);
+} else {
+  const btn = document.createElement("button");
+  btn.textContent = "Load More";
+  btn.onclick = renderNextBatch;
   sentinel.replaceWith(btn);
 }
 
-// Mini player
-const overlay=playerOverlay,frame=playerFrame;
-playerClose.onclick=()=>{frame.src="about:blank";overlay.style.display="none";};
-overlay.onclick=e=>{if(e.target===overlay)playerClose.onclick();};
-function openMini(id){frame.src=`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;overlay.style.display="flex";}
+/***********************
+ * Mini Player with adaptive + presets + saved size
+ ***********************/
+const overlay = document.getElementById("playerOverlay");
+const frame = document.getElementById("playerFrame");
+const closeBtn = document.getElementById("playerClose");
+const playerCard = document.getElementById("playerCard");
+const sizeBtns = document.querySelectorAll("#sizeButtons button");
 
-// Load playlist
-async function showPlaylist(input){
-  const id=extractPlaylistId(input);
-  if(!id){playlist.textContent="Please enter a valid ID.";return;}
-  s.playlistId=id;s.filtered=null;s.allVideos=[];s.meta=null;s.idx=0;
-
-  playlist.classList.add("loading");playlist.textContent="Loading cache…";
-  const c=await loadFromCache(id);
-  if(c.videos.length){s.allVideos=c.videos;s.meta=c.meta;s.source="Cache";playlist.classList.remove("loading");renderAll(true);}
-  playlist.classList.add("loading");playlist.textContent="Fetching latest…";
-  const {meta,videos}=await fetchXMLPlaylist(id);
-  playlist.classList.remove("loading");
-  if(!videos.length){if(!c.videos.length)playlist.textContent="No videos found.";s.source=c.videos.length?"Cache":"XML";renderAll(true);return;}
-  s.allVideos=videos;s.meta=meta;s.source="XML";await saveToCache(id,meta,videos);renderAll(true);
-  if("caches"in window){try{const urls=videos.map(v=>v.thumb).filter(Boolean);(await caches.open("yt-thumbs")).addAll(urls.slice(0,40));}catch{}}
+async function loadSavedSize() {
+  const key = "player_size_pref";
+  let val = null;
+  try { val = await creationStore.getItem(key); } catch {}
+  if (!val) val = localStorage.getItem(key);
+  if (val) playerCard.className = `size-${val}`;
 }
 
-// Search
-searchInput.oninput=e=>{
-  const q=e.target.value.toLowerCase().trim();
-  s.filtered=q?s.allVideos.filter(v=>v.title.toLowerCase().includes(q)):null;
+async function saveSizePref(size) {
+  const key = "player_size_pref";
+  await creationStore.setItem(key, size);
+  localStorage.setItem(key, size);
+}
+
+function openMiniPlayer(id) {
+  // Apply saved size before showing
+  loadSavedSize();
+  frame.src = `https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;
+  overlay.style.display = "flex";
+}
+
+function closeMiniPlayer() {
+  frame.src = "about:blank";
+  overlay.style.display = "none";
+}
+
+overlay.addEventListener("click", e => { if (e.target===overlay) closeMiniPlayer(); });
+closeBtn.addEventListener("click", closeMiniPlayer);
+
+// Manual size presets with persistence
+sizeBtns.forEach(btn=>{
+  btn.addEventListener("click", async ()=>{
+    const size = btn.dataset.size;
+    playerCard.className = size ? `size-${size}` : "";
+    await saveSizePref(size);
+  });
+});
+
+/***********************
+ * UI helpers
+ ***********************/
+function setLoading(isLoading, msg="Fetching playlist…") {
+  const c = document.getElementById("playlist");
+  if (isLoading) { c.classList.add("loading"); c.innerText = msg; }
+  else c.classList.remove("loading");
+}
+
+/***********************
+ * Main controller
+ ***********************/
+async function showPlaylist(input) {
+  const container = document.getElementById("playlist");
+  const pid = extractPlaylistId(input);
+  if (!pid) { container.innerText = "Please enter a valid playlist ID or URL."; return; }
+
+  state.playlistId = pid;
+  state.filteredVideos = null;
+  state.allVideos = [];
+  state.meta = null;
+  state.renderIndex = 0;
+
+  // 1) Cached
+  setLoading(true, "Loading cached playlist…");
+  const cached = await loadFromCache(pid);
+  if (cached.videos?.length) {
+    state.allVideos = cached.videos;
+    state.meta = cached.meta;
+    state.sourceUsed = "Cache";
+    setLoading(false);
+    renderAll(true);
+  }
+
+  // 2) Fresh
+  setLoading(true, "Fetching latest playlist…");
+  const {meta, videos} = await fetchXMLPlaylist(pid);
+  setLoading(false);
+  if (!videos.length) {
+    if (!cached.videos?.length) container.innerText="No videos found or playlist is private.";
+    state.sourceUsed = cached.videos?.length ? "Cache" : "XML";
+    renderAll(true);
+    return;
+  }
+
+  state.allVideos = videos;
+  state.meta = meta;
+  state.sourceUsed = "XML";
+  await saveToCache(pid, meta, videos);
   renderAll(true);
-};
 
-// Buttons
-loadBtn.onclick=()=>showPlaylist(playlistIdInput.value.trim());
-playlistIdInput.onkeydown=e=>{if(e.key==="Enter")loadBtn.onclick();};
-clearCacheBtn.onclick=async()=>{
-  if(!confirm("Clear cached playlists for this viewer?"))return;
-  const ks=Object.keys(localStorage).filter(k=>k.startsWith("pl_"));
-  ks.forEach(k=>localStorage.removeItem(k));
-  if("caches"in window)await caches.delete("yt-thumbs");
-  if(window.rabbit?.creationStorage?.removeItem)for(const k of ks)await window.rabbit.creationStorage.removeItem(k);
+  // Optional: warm thumbnail cache
+  if ("caches" in window) {
+    try {
+      const urls = videos.map(v => v.thumb).filter(Boolean);
+      const cache = await caches.open("yt-thumbs-v1");
+      cache.addAll(urls.slice(0, 40));
+    } catch {}
+  }
+}
+
+/***********************
+ * Search filter
+ ***********************/
+document.getElementById("searchInput").addEventListener("input", e => {
+  const q = e.target.value.toLowerCase().trim();
+  state.filteredVideos = q ? state.allVideos.filter(v=>v.title.toLowerCase().includes(q)) : null;
+  renderAll(true);
+});
+
+/***********************
+ * Load playlist
+ ***********************/
+document.getElementById("loadBtn").addEventListener("click", ()=>{
+  const val = document.getElementById("playlistIdInput").value.trim();
+  showPlaylist(val);
+});
+document.getElementById("playlistIdInput").addEventListener("keydown", e=>{
+  if (e.key==="Enter") document.getElementById("loadBtn").click();
+});
+
+/***********************
+ * Clear Cache button
+ ***********************/
+document.getElementById("clearCacheBtn").addEventListener("click", async ()=>{
+  if (!confirm("Clear cached playlists for this viewer?")) return;
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith("pl_"));
+  keys.forEach(k=>localStorage.removeItem(k));
+  if ("caches" in window) await caches.delete("yt-thumbs-v1");
+  if (window.rabbit?.creationStorage?.removeItem) {
+    for (const k of keys) await window.rabbit.creationStorage.removeItem(k);
+  }
   alert("✅ Cache cleared for this app.");
-};
+});
 
-// Default
-playlistIdInput.value="PLMmqTuUsDkRKv4ulZiAYRoWLu1184CAkt";
-showPlaylist(playlistIdInput.value);
+/***********************
+ * Initial default playlist
+ ***********************/
+const defaultId = "PLMmqTuUsDkRKv4ulZiAYRoWLu1184CAkt";
+document.getElementById("playlistIdInput").value = defaultId;
+showPlaylist(defaultId);
