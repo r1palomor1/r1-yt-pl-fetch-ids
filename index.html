@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Playlist Viewer (Namespace Fix)</title>
+  <title>YouTube Playlist Viewer (Enhanced)</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -17,13 +17,51 @@
 
     h1 {
       font-size: 1.2rem;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.5rem;
       color: #ff7043;
     }
+
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"] {
+      padding: 0.4rem 0.6rem;
+      border: none;
+      border-radius: 6px;
+      outline: none;
+      font-size: 0.9rem;
+    }
+
+    #playlistIdInput { width: 260px; }
+    #searchInput { width: 180px; }
+
+    button {
+      background: #ff7043;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: background 0.2s ease;
+    }
+    button:hover { background: #ff5722; }
 
     #sourceTag {
       font-size: 0.8rem;
       color: #999;
+      margin-bottom: 0.5rem;
+    }
+
+    #playlistMeta {
+      font-size: 0.85rem;
+      color: #ccc;
+      text-align: center;
       margin-bottom: 1rem;
     }
 
@@ -34,6 +72,11 @@
       width: 100%;
       max-width: 960px;
       text-align: center;
+      transition: all 0.2s ease-in-out;
+    }
+
+    body.compact #playlist {
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     }
 
     .video {
@@ -59,96 +102,4 @@
       padding: 0.5rem 0.8rem 0.8rem;
       font-size: 0.9rem;
       line-height: 1.3;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    a { color: inherit; text-decoration: none; }
-
-    .loading::after {
-      content: "⏳";
-      animation: spin 1.2s linear infinite;
-      display: inline-block;
-      margin-left: 8px;
-    }
-
-    @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
-  </style>
-</head>
-<body>
-  <h1>YouTube Playlist Viewer</h1>
-  <div id="sourceTag"></div>
-  <div id="playlist">Loading playlist...</div>
-
-  <script>
-    async function fetchXMLPlaylist(playlistId) {
-      const feed = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(feed)}`;
-
-      try {
-        const response = await fetch(proxy);
-        const xmlText = await response.text();
-        const xml = new DOMParser().parseFromString(xmlText, "application/xml");
-
-        const entries = Array.from(xml.getElementsByTagName("entry"));
-        if (!entries.length) {
-          console.warn("⚠️ No <entry> tags found in feed");
-        }
-
-        const items = entries.map(entry => {
-          // Use localName lookup for namespace-safe parsing
-          const videoIdNode = Array.from(entry.children).find(n => n.localName === "videoId");
-          const titleNode = Array.from(entry.children).find(n => n.localName === "title");
-          const thumbNode = entry.getElementsByTagNameNS("*", "thumbnail")[0];
-
-          const id = videoIdNode?.textContent?.trim();
-          const title = titleNode?.textContent?.trim() || "Untitled";
-          const thumb = thumbNode?.getAttribute("url");
-
-          return id ? { id, title, thumb } : null;
-        }).filter(Boolean);
-
-        console.log(`✅ Parsed ${items.length} videos from XML`);
-        return items;
-      } catch (e) {
-        console.error("❌ XML fetch/parse error:", e);
-        return [];
-      }
-    }
-
-    async function showPlaylist(playlistId) {
-      const container = document.getElementById("playlist");
-      const sourceTag = document.getElementById("sourceTag");
-
-      container.classList.add("loading");
-      container.innerText = "Fetching playlist, please wait...";
-      sourceTag.innerText = "";
-
-      const videos = await fetchXMLPlaylist(playlistId);
-      const sourceUsed = "XML Fallback";
-
-      container.classList.remove("loading");
-      container.innerHTML = "";
-      sourceTag.innerText = videos.length
-        ? `Source: ${sourceUsed} — ${videos.length} videos loaded`
-        : `Source: ${sourceUsed}`;
-
-      if (!videos.length) {
-        container.innerText = "No videos found or playlist is private.";
-        return;
-      }
-
-      container.innerHTML = videos.map(v => `
-        <a class="video" href="https://www.youtube.com/watch?v=${v.id}" target="_blank">
-          <img class="thumb" src="${v.thumb}" alt="${v.title}">
-          <div class="title">${v.title}</div>
-        </a>
-      `).join("");
-    }
-
-    const playlistId = "PLMmqTuUsDkRKv4ulZiAYRoWLu1184CAkt";
-    showPlaylist(playlistId);
-  </script>
-</body>
-</html>
+      text-overflow: ellip
