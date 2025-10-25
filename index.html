@@ -2,40 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>YouTube Playlist Viewer (Rabbit R1)</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Playlist Viewer</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>YouTube Playlist Viewer</h1>
+  <header>
+    <h1>YouTube Playlist Viewer</h1>
+    <div id="sourceTag">Source: —</div>
+    <div id="playlistMeta"></div>
+    <div class="topbar">
+      <input id="playlistIdInput" placeholder="Enter playlist URL or ID" />
+      <button id="loadBtn">Load</button>
+      <button id="clearCacheBtn">🧹</button>
+      <input id="searchInput" placeholder="Search..." />
+    </div>
+  </header>
 
-  <div id="controls">
-    <input id="playlistIdInput" type="text" placeholder="Paste playlist URL or ID…" />
-    <button id="loadBtn">Load Playlist</button>
-    <input id="searchInput" type="text" placeholder="Search titles…" />
-    <button id="clearCacheBtn">Clear Cache</button>
-  </div>
-
-  <div id="sourceTag"></div>
-  <div id="playlistMeta"></div>
-  <div id="playlist">Loading playlist...</div>
+  <main id="playlist" class="loading">Loading…</main>
   <div id="sentinel"></div>
 
-  <!-- Mini Player Overlay -->
-  <div id="playerOverlay" role="dialog" aria-modal="true" aria-label="Now Playing">
+  <!-- ✅ Player overlay -->
+  <div id="playerOverlay">
     <div id="playerCard">
-      <div id="playerToolbar">
-        <div id="sizeButtons">
-          <button data-size="small" title="Small">S</button>
-          <button data-size="medium" title="Medium">M</button>
-          <button data-size="large" title="Large">L</button>
-        </div>
-        <button id="playerClose" title="Close">✕</button>
+      <iframe id="playerFrame" allowfullscreen></iframe>
+    </div>
+
+    <!-- ✅ Toolbar moved OUTSIDE the playerCard -->
+    <div id="playerToolbar">
+      <div id="sizeButtons">
+        <button data-size="small" title="Small">S</button>
+        <button data-size="medium" title="Medium">M</button>
+        <button data-size="large" title="Large">L</button>
       </div>
-      <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <button id="playerClose" title="Close">✕</button>
     </div>
   </div>
 
-  <script src="script.js" defer></script>
+  <script src="script.js"></script>
 </body>
 </html>
