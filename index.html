@@ -102,4 +102,136 @@
       padding: 0.5rem 0.8rem 0.8rem;
       font-size: 0.9rem;
       line-height: 1.3;
-      text-overflow: ellip
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .loading::after {
+      content: "⏳";
+      animation: spin 1.2s linear infinite;
+      display: inline-block;
+      margin-left: 8px;
+    }
+
+    @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+  </style>
+</head>
+<body>
+  <h1>YouTube Playlist Viewer</h1>
+
+  <div id="controls">
+    <input id="playlistIdInput" type="text" placeholder="Enter Playlist ID" />
+    <button id="loadBtn">Load Playlist</button>
+    <input id="searchInput" type="text" placeholder="Search titles..." />
+    <button id="viewToggleBtn">Toggle View</button>
+  </div>
+
+  <div id="sourceTag"></div>
+  <div id="playlistMeta"></div>
+  <div id="playlist">Loading playlist...</div>
+
+  <script>
+    // 🔹 Core XML Fetcher
+    async function fetchXMLPlaylist(playlistId) {
+      const feed = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
+      const proxy = `https://corsproxy.io/?${encodeURIComponent(feed)}`;
+
+      try {
+        const response = await fetch(proxy);
+        const xmlText = await response.text();
+        const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+
+        // Get playlist metadata
+        const playlistTitle = xml.querySelector("feed > title")?.textContent || "Untitled Playlist";
+        const author = xml.querySelector("author > name")?.textContent || "Unknown";
+
+        const entries = Array.from(xml.getElementsByTagName("entry"));
+        const items = entries.map(entry => {
+          const videoIdNode = Array.from(entry.children).find(n => n.localName === "videoId");
+          const titleNode = Array.from(entry.children).find(n => n.localName === "title");
+          const thumbNode = entry.getElementsByTagNameNS("*", "thumbnail")[0];
+
+          const id = videoIdNode?.textContent?.trim();
+          const title = titleNode?.textContent?.trim() || "Untitled";
+          const thumb = thumbNode?.getAttribute("url");
+          return id ? { id, title, thumb } : null;
+        }).filter(Boolean);
+
+        return { meta: { playlistTitle, author }, videos: items };
+      } catch (e) {
+        console.error("❌ XML fetch/parse error:", e);
+        return { meta: null, videos: [] };
+      }
+    }
+
+    // 🔹 Render playlist
+    function renderPlaylist(videos) {
+      const container = document.getElementById("playlist");
+      if (!videos.length) {
+        container.innerText = "No videos found or playlist is private.";
+        return;
+      }
+
+      container.innerHTML = videos.map(v => `
+        <a class="video" href="https://www.youtube.com/watch?v=${v.id}" target="_blank">
+          <img class="thumb" src="${v.thumb}" loading="lazy" alt="${v.title}">
+          <div class="title">${v.title}</div>
+        </a>
+      `).join("");
+    }
+
+    // 🔹 Show playlist info
+    function showMeta(meta, source, count) {
+      const sourceTag = document.getElementById("sourceTag");
+      const metaDiv = document.getElementById("playlistMeta");
+      sourceTag.innerText = `Source: ${source} — ${count} videos loaded`;
+      metaDiv.innerText = `Playlist: ${meta.playlistTitle} | By: ${meta.author}`;
+    }
+
+    // 🔹 Main controller
+    async function showPlaylist(playlistId) {
+      const container = document.getElementById("playlist");
+      container.classList.add("loading");
+      container.innerText = "Fetching playlist...";
+      document.getElementById("sourceTag").innerText = "";
+      document.getElementById("playlistMeta").innerText = "";
+
+      const { meta, videos } = await fetchXMLPlaylist(playlistId);
+
+      container.classList.remove("loading");
+      renderPlaylist(videos);
+      if (meta) showMeta(meta, "XML Fallback", videos.length);
+
+      // store for search
+      window.currentVideos = videos;
+    }
+
+    // 🔹 Search filter
+    document.getElementById("searchInput").addEventListener("input", e => {
+      const query = e.target.value.toLowerCase();
+      const filtered = window.currentVideos.filter(v => v.title.toLowerCase().includes(query));
+      renderPlaylist(filtered);
+      document.getElementById("sourceTag").innerText = `Filtered: ${filtered.length} / ${window.currentVideos.length}`;
+    });
+
+    // 🔹 Load new playlist ID
+    document.getElementById("loadBtn").addEventListener("click", () => {
+      const newId = document.getElementById("playlistIdInput").value.trim();
+      if (!newId) return alert("Please enter a playlist ID.");
+      showPlaylist(newId);
+    });
+
+    // 🔹 Toggle view mode
+    document.getElementById("viewToggleBtn").addEventListener("click", () => {
+      document.body.classList.toggle("compact");
+    });
+
+    // ✅ Initial load
+    const defaultId = "PLMmqTuUsDkRKv4ulZiAYRoWLu1184CAkt";
+    showPlaylist(defaultId);
+  </script>
+</body>
+</html>
