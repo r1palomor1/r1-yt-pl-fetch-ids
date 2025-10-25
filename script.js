@@ -219,7 +219,9 @@ closeBtn.addEventListener("click", closeMiniPlayer);
 aspectBtns.forEach(btn => {
   btn.addEventListener("click", async () => {
     const aspect = btn.dataset.aspect;
-    playerCard.className = `aspect-${aspect}`;
+    // Preserve the base class name instead of overwriting everything
+    playerCard.classList.remove("aspect-portrait","aspect-wide","aspect-classic","aspect-square");
+    playerCard.classList.add(`aspect-${aspect}`);
     await saveAspect(aspect);
     const label = {portrait:"Portrait",wide:"Widescreen",classic:"Classic",square:"Square"}[aspect] || aspect;
     showToast(`${label} mode selected`);
