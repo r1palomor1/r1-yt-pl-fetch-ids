@@ -8,7 +8,7 @@ const creationStore={
 // Extract playlist id
 function extractPlaylistId(i){const v=i.trim();if(!v)return"";try{const u=new URL(v);const l=u.searchParams.get("list");if(l)return l;}catch{}return v;}
 
-// Fetch XML
+// Fetch XML playlist
 async function fetchXMLPlaylist(id){
   const feed=`https://www.youtube.com/feeds/videos.xml?playlist_id=${id}`;
   const proxy=`https://corsproxy.io/?${encodeURIComponent(feed)}`;
@@ -76,10 +76,20 @@ if("IntersectionObserver"in window){
 }
 
 // Mini player
-const overlay=playerOverlay,frame=playerFrame;
-playerClose.onclick=()=>{frame.src="about:blank";overlay.style.display="none";};
+const overlay=playerOverlay,frame=playerFrame,card=playerCard;
+playerClose.onclick=()=>{frame.src="about:blank";overlay.style.display="none";card.classList.remove("zoom-fill","zoom-portrait");};
 overlay.onclick=e=>{if(e.target===overlay)playerClose.onclick();};
 function openMini(id){frame.src=`https://www.youtube.com/embed/${id}?autoplay=1&rel=0`;overlay.style.display="flex";}
+
+// Zoom buttons
+document.querySelectorAll("#zoomControls button").forEach(btn=>{
+  btn.onclick=()=>{
+    const z=btn.dataset.zoom;
+    card.classList.remove("zoom-fill","zoom-portrait");
+    if(z==="fill")card.classList.add("zoom-fill");
+    if(z==="portrait")card.classList.add("zoom-portrait");
+  };
+});
 
 // Load playlist
 async function showPlaylist(input){

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>YouTube Playlist Viewer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -23,9 +23,14 @@
 
   <!-- Mini Player -->
   <div id="playerOverlay" role="dialog" aria-modal="true">
-    <div id="playerCard">
+    <div id="playerCard" class="ratio-16-9">
       <button id="playerClose" title="Close">✕</button>
       <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+      <div id="zoomControls">
+        <button data-zoom="normal">Default</button>
+        <button data-zoom="fill">Fill</button>
+        <button data-zoom="portrait">Portrait</button>
+      </div>
     </div>
   </div>
 
