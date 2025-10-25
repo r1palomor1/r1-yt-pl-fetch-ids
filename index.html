@@ -7,44 +7,26 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header>
-    <h1>YouTube Playlist Viewer</h1>
-    <div id="sourceTag">Source: —</div>
-    <div id="playlistMeta"></div>
+  <h1>YouTube Playlist Viewer</h1>
 
-    <div class="topbar">
-      <input id="playlistIdInput" type="text" placeholder="Paste playlist URL or ID…" />
-      <button id="loadBtn">Load</button>
-      <input id="searchInput" type="text" placeholder="Search titles…" />
-      <button id="clearCacheBtn" title="Clear cache">🧹</button>
-    </div>
-  </header>
+  <div id="controls">
+    <input id="playlistIdInput" type="text" placeholder="Paste playlist URL or ID…" />
+    <button id="loadBtn">Load Playlist</button>
+    <input id="searchInput" type="text" placeholder="Search titles…" />
+    <button id="clearCacheBtn">Clear Cache</button>
+  </div>
 
-  <main id="playlist" class="loading">Loading…</main>
+  <div id="sourceTag"></div>
+  <div id="playlistMeta"></div>
+  <div id="playlist">Loading playlist...</div>
   <div id="sentinel"></div>
 
-  <!-- Player overlay -->
-  <div id="playerOverlay" role="dialog" aria-modal="true" aria-label="Now Playing">
+  <!-- Mini Player -->
+  <div id="playerOverlay" role="dialog" aria-modal="true">
     <div id="playerCard">
+      <button id="playerClose" title="Close">✕</button>
       <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
-
-    <!-- Toolbar (outside iframe to avoid z-index issues on Rabbit) -->
-    <div id="playerToolbar">
-      <!-- Bottom-left aspect presets -->
-      <div id="aspectButtons" aria-label="Aspect presets">
-        <button data-aspect="portrait" title="Portrait">P</button>
-        <button data-aspect="wide"     title="Widescreen">W</button>
-        <button data-aspect="classic"  title="Classic">C</button>
-        <button data-aspect="square"   title="Square">S</button>
-      </div>
-
-      <!-- Bottom-right close -->
-      <button id="playerClose" title="Close">✕</button>
-    </div>
-
-    <!-- Toast (fade in/out) -->
-    <div id="toast" role="status" aria-live="polite"></div>
   </div>
 
   <script src="script.js" defer></script>
