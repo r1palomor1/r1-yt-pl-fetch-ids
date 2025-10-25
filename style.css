@@ -124,32 +124,43 @@ a { color:inherit; text-decoration:none; }
 
 /* --- Close & Zoom Controls --- */
 #playerClose {
-  position:absolute; top:8px; right:8px;
+  position:absolute; 
+  top:8px; right:8px;
   background:rgba(0,0,0,.6);
   border:1px solid #444; color:#fff;
   border-radius:999px; padding:6px 10px;
-  cursor:pointer; z-index:5;         /* ensures visible above iframe */
+  cursor:pointer; z-index:5;
 }
+
+/* ⬇️ Pin zoom controls to bottom of the screen, not inside card */
 #zoomControls {
-  position:absolute; bottom:10px; left:10px;
-  display:flex; gap:.4rem; z-index:10;
+  position:fixed;           /* was absolute */
+  bottom:12px; left:50%;
+  transform:translateX(-50%);
+  display:flex; gap:.5rem;
+  z-index:10001;            /* above overlay & iframe */
 }
+
 #zoomControls button {
   background:rgba(255,255,255,0.15);
   color:#fff; font-size:.8rem;
-  padding:3px 6px;
+  padding:4px 8px;
   border:1px solid rgba(255,255,255,0.2);
   border-radius:6px;
   cursor:pointer;
+  backdrop-filter:blur(4px);
 }
 #zoomControls button:hover { background:rgba(255,255,255,0.3); }
 
-#sentinel { width:100%; height:40px; text-align:center; margin-top:1rem; }
-
-/* Rabbit R1 very small screens */
+/* Small-screen tweaks for Rabbit R1 */
 @media (max-width:260px){
-  #playerCard.zoom-portrait { width:92vw; }
-  #zoomControls { bottom:6px; left:6px; gap:3px; }
-  #zoomControls button { font-size:.7rem; padding:2px 4px; }
+  #zoomControls {
+    bottom:6px;
+    gap:4px;
+  }
+  #zoomControls button {
+    font-size:.7rem;
+    padding:2px 4px;
+  }
   #playerClose { top:4px; right:4px; padding:4px 8px; }
 }
