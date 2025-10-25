@@ -99,13 +99,37 @@ button:hover { background: #ff5722; }
   aspect-ratio: 16/9;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-  position: relative; overflow: hidden;
-  transition: width .25s ease, aspect-ratio .25s ease;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s ease;
 }
 
+/* 🧩 Force iframe content to scale with parent */
+#playerCard iframe {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+  scale: 1.35;  /* enlarge the embedded video so it fills tall ratios */
+  transition: scale 0.25s ease;
+}
+
+#playerCard.aspect-portrait iframe { scale: 2.2; }
+#playerCard.aspect-classic iframe  { scale: 1.5; }
+#playerCard.aspect-square iframe   { scale: 1.75; }
+#playerCard.aspect-wide iframe     { scale: 1.35; }
+
 #playerFrame {
-  width: 100%; height: 100%;
-  border: 0; background: #000; display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+  object-fit: cover;
+  display: block;
+  transition: all 0.25s ease;
 }
 
 /* Toolbar (kept outside iframe layer to avoid Rabbit z-index issues) */
