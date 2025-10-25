@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>YouTube Playlist Viewer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -11,34 +11,42 @@
     <h1>YouTube Playlist Viewer</h1>
     <div id="sourceTag">Source: —</div>
     <div id="playlistMeta"></div>
+
     <div class="topbar">
-      <input id="playlistIdInput" placeholder="Enter playlist URL or ID" />
+      <input id="playlistIdInput" type="text" placeholder="Paste playlist URL or ID…" />
       <button id="loadBtn">Load</button>
-      <button id="clearCacheBtn">🧹</button>
-      <input id="searchInput" placeholder="Search..." />
+      <input id="searchInput" type="text" placeholder="Search titles…" />
+      <button id="clearCacheBtn" title="Clear cache">🧹</button>
     </div>
   </header>
 
   <main id="playlist" class="loading">Loading…</main>
   <div id="sentinel"></div>
 
-  <!-- ✅ Player overlay -->
-  <div id="playerOverlay">
+  <!-- Player overlay -->
+  <div id="playerOverlay" role="dialog" aria-modal="true" aria-label="Now Playing">
     <div id="playerCard">
-      <iframe id="playerFrame" allowfullscreen></iframe>
+      <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
     </div>
 
-    <!-- ✅ Toolbar moved OUTSIDE the playerCard -->
+    <!-- Toolbar (outside iframe to avoid z-index issues on Rabbit) -->
     <div id="playerToolbar">
-      <div id="sizeButtons">
-        <button data-size="small" title="Small">S</button>
-        <button data-size="medium" title="Medium">M</button>
-        <button data-size="large" title="Large">L</button>
+      <!-- Bottom-left aspect presets -->
+      <div id="aspectButtons" aria-label="Aspect presets">
+        <button data-aspect="portrait" title="Portrait">P</button>
+        <button data-aspect="wide"     title="Widescreen">W</button>
+        <button data-aspect="classic"  title="Classic">C</button>
+        <button data-aspect="square"   title="Square">S</button>
       </div>
+
+      <!-- Bottom-right close -->
       <button id="playerClose" title="Close">✕</button>
     </div>
+
+    <!-- Toast (fade in/out) -->
+    <div id="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <script src="script.js"></script>
+  <script src="script.js" defer></script>
 </body>
 </html>

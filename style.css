@@ -1,80 +1,96 @@
 :root {
-  --bg-color: #000;
-  --text-color: #eee;
-  --accent-color: #ff7043;
-  --font-family: system-ui, sans-serif;
+  --accent: #ff7043;
+  --bg: #0f0f0f;
+  --card: #1c1c1c;
+  --text: #ffffff;
+  --muted: #cccccc;
+  --muted-2: #999999;
+  --shadow: rgba(0,0,0,0.4);
+  --shadow-accent: rgba(255,112,67,0.5);
+  --glass: rgba(255,255,255,0.14);
 }
 
+* { box-sizing: border-box; }
+
 body {
-  background: var(--bg-color);
-  color: var(--text-color);
-  font-family: var(--font-family);
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, sans-serif;
   margin: 0;
-  padding: 0;
   text-align: center;
 }
 
-header {
-  padding: 0.5rem;
+h1 {
+  color: var(--accent);
+  font-size: 1.2rem;
+  margin: .75rem 0 .25rem;
 }
+
+header { padding: 0 .75rem .25rem; }
 
 .topbar {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  flex-wrap: wrap;
-  margin-top: 0.5rem;
+  display: flex; flex-wrap: wrap; gap: .5rem;
+  justify-content: center; align-items: center;
+  margin: .5rem auto; max-width: 980px;
 }
 
-input, button {
-  font-size: 0.9rem;
-  padding: 4px 6px;
-  border: none;
-  border-radius: 4px;
+input[type="text"] {
+  background:#222; color: var(--text);
+  border:none; border-radius:8px; padding:.45rem .6rem; font-size:.9rem;
 }
+#playlistIdInput { min-width: 260px; flex: 1 1 360px; }
+#searchInput     { min-width: 200px; }
 
 button {
-  background: var(--accent-color);
-  color: white;
-  cursor: pointer;
+  background: var(--accent); color:#fff;
+  border: none; border-radius: 8px;
+  padding: .45rem .8rem; font-size: .9rem;
+  cursor: pointer; transition: background .2s;
 }
-button:hover { opacity: 0.85; }
+button:hover { background: #ff5722; }
 
+#sourceTag, #playlistMeta {
+  color: var(--muted);
+  font-size: .85rem;
+  margin: .25rem auto;
+}
+
+/* Playlist grid (compact) */
 #playlist {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px,1fr));
+  gap: .8rem;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: .75rem;
+  min-height: 140px;
 }
-
 .video {
-  width: 140px;
-  text-decoration: none;
-  color: inherit;
+  background: var(--card);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px var(--shadow);
+  transition: transform .2s, box-shadow .2s;
+  text-decoration: none; color: inherit;
 }
-.video img.thumb {
-  width: 100%;
-  border-radius: 6px;
-}
-.video .title {
-  font-size: 0.8rem;
-  margin-top: 2px;
-  line-height: 1.2;
-}
+.video:hover { transform: translateY(-3px); box-shadow: 0 4px 12px var(--shadow-accent); }
+.thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+.title { padding: .4rem .5rem .6rem; font-size: .8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/***********************
- * Overlay
- ***********************/
+/* Spinner for loading */
+.loading::after {
+  content: "⏳"; display:inline-block; margin-left:.4rem;
+  animation: spin 1.2s linear infinite;
+}
+@keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+/* Overlay */
 #playerOverlay {
-  position: fixed;
-  inset: 0;
+  position: fixed; inset: 0;
   background: rgba(0,0,0,0.85);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  z-index: 9999;
+  display: none; /* toggled to flex */
+  justify-content: center; align-items: center; flex-direction: column;
+  z-index: 9999; padding: 1rem;
 }
 
 #playerCard {
@@ -82,99 +98,68 @@ button:hover { opacity: 0.85; }
   width: min(92vw, 860px);
   aspect-ratio: 16/9;
   border-radius: 12px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.7);
-  position: relative;
-  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  position: relative; overflow: hidden;
+  transition: width .25s ease, aspect-ratio .25s ease;
 }
 
 #playerFrame {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #000;
-  display: block;
+  width: 100%; height: 100%;
+  border: 0; background: #000; display: block;
 }
 
-/***********************
- * Toolbar (outside iframe)
- ***********************/
+/* Toolbar (kept outside iframe layer to avoid Rabbit z-index issues) */
 #playerToolbar {
   position: fixed;
-  bottom: 12px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 10px;
-  z-index: 10000; /* Above hardware layer */
+  inset-inline: 0;
+  bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 10px; z-index: 10000; pointer-events: none;
+}
+
+#aspectButtons {
+  position: absolute;
+  left: 10px; bottom: 10px;
+  display: flex; flex-direction: column; gap: 6px;
   pointer-events: auto;
 }
 
-#sizeButtons {
-  display: flex;
-  gap: 4px;
+#aspectButtons button, #playerClose {
+  border: none; border-radius: 8px;
+  background: var(--glass);
+  color: #fff; backdrop-filter: blur(4px);
+  padding: 6px 10px; font-size: .9rem;
 }
 
-#sizeButtons button, #playerClose {
-  font-size: 0.9rem;
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: none;
-  background: rgba(255,255,255,0.15);
-  color: #fff;
-  backdrop-filter: blur(3px);
-}
-
+/* Close sits bottom-right */
 #playerClose {
-  font-weight: bold;
+  position: absolute; right: 10px; bottom: 10px;
   background: rgba(255,0,0,0.25);
+  pointer-events: auto;
 }
 
-/***********************
- * Adaptive Ratios + Presets
- ***********************/
-@media (orientation: portrait) {
-  #playerCard {
-    aspect-ratio: 9/16;
-    width: min(92vw, 240px);
-  }
+/* Aspect presets (always fit viewport width) */
+#playerCard.aspect-portrait { width: 90vw; aspect-ratio: 9/16; }
+#playerCard.aspect-wide     { width: 95vw; aspect-ratio: 16/9; }
+#playerCard.aspect-classic  { width: 95vw; aspect-ratio: 4/3;  }
+#playerCard.aspect-square   { width: 90vw; aspect-ratio: 1/1;  }
+
+/* Toast (fade only) */
+#toast {
+  position: fixed;
+  left: 50%; bottom: 50%;
+  transform: translate(-50%, 0);
+  background: rgba(0,0,0,0.7);
+  color: #fff; padding: 8px 14px; border-radius: 8px;
+  opacity: 0; pointer-events: none;
+  transition: opacity .28s ease;
+  font-size: .9rem; z-index: 10001;
 }
+#toast.show { opacity: 1; }
 
-#playerCard.size-small  { width: 240px; aspect-ratio:16/9; }
-#playerCard.size-medium { width: 480px; aspect-ratio:16/9; }
-#playerCard.size-large  { width: 860px; aspect-ratio:16/9; }
-
-/***********************
- * Tiny-screen tuning (Rabbit R1)
- ***********************/
+/* Tiny screens (Rabbit R1) */
 @media (max-width: 260px) {
-  #sizeButtons button {
-    font-size: 0.7rem;
-    padding: 2px 4px;
-  }
-  #playerClose {
-    font-size: 0.8rem;
-    padding: 4px 6px;
-  }
-  #playerToolbar {
-    bottom: 4px;
-    padding: 4px 6px;
-  }
+  #aspectButtons { flex-direction: row; gap: 4px; left: 6px; bottom: 6px; }
+  #aspectButtons button { font-size: .8rem; padding: 4px 6px; }
+  #playerClose { right: 6px; bottom: 6px; padding: 4px 8px; }
 }
-
-/***********************
- * Spinner (for loading)
- ***********************/
-.loading::after {
-  content: "";
-  display: block;
-  width: 24px;
-  height: 24px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: var(--accent-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin: 16px auto;
-}
-@keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
