@@ -4,10 +4,10 @@
   --card:#1c1c1c;
   --text:#fff;
   --muted:#ccc;
-  --muted-2:#999;
   --shadow:rgba(0,0,0,0.4);
   --shadow-accent:rgba(255,112,67,0.5);
 }
+
 body {
   font-family:system-ui,sans-serif;
   background:var(--bg);
@@ -18,42 +18,70 @@ body {
   padding:1rem;
   min-height:100svh;
 }
-h1 {color:var(--accent);margin-bottom:.5rem;}
+
+h1 { color:var(--accent); margin-bottom:.5rem; }
+
 #controls {
-  display:flex;flex-wrap:wrap;justify-content:center;
-  gap:.5rem;margin-bottom:.75rem;width:100%;max-width:960px;
+  display:flex; flex-wrap:wrap; justify-content:center;
+  gap:.5rem; margin-bottom:.75rem; width:100%; max-width:960px;
 }
-input[type=text]{background:#222;color:var(--text);border:none;border-radius:8px;padding:.45rem .6rem;font-size:.9rem;}
-#playlistIdInput{flex:1 1 320px;min-width:240px;}
-#searchInput{flex:0 1 220px;}
+input[type=text] {
+  background:#222; color:var(--text);
+  border:none; border-radius:8px; padding:.45rem .6rem; font-size:.9rem;
+}
+#playlistIdInput { flex:1 1 320px; min-width:240px; }
+#searchInput { flex:0 1 220px; }
+
 button {
-  background:var(--accent);color:#fff;border:none;border-radius:8px;
-  padding:.45rem .8rem;font-size:.9rem;cursor:pointer;transition:background .2s;
+  background:var(--accent); color:#fff; border:none; border-radius:8px;
+  padding:.45rem .8rem; font-size:.9rem; cursor:pointer;
+  transition:background .2s;
 }
-button:hover{background:#ff5722;}
-#sourceTag,#playlistMeta{
-  width:100%;max-width:960px;text-align:center;font-size:.85rem;margin-bottom:.35rem;color:var(--muted);
-}
-#playlist{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
-  gap:.8rem;width:100%;max-width:960px;transition:all .2s ease-in-out;min-height:120px;
-}
-.video{
-  background:var(--card);border-radius:10px;overflow:hidden;
-  box-shadow:0 2px 6px var(--shadow);transition:transform .2s,box-shadow .2s;
-}
-.video:hover{transform:translateY(-3px);box-shadow:0 4px 12px var(--shadow-accent);}
-.thumb{width:100%;aspect-ratio:16/9;object-fit:cover;}
-.title{padding:.4rem .5rem .6rem;font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-a{color:inherit;text-decoration:none;}
-.loading::after{content:"⏳";margin-left:8px;animation:spin 1.2s linear infinite;}
-@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-#playerOverlay{
-  position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;
-  align-items:center;justify-content:center;z-index:9999;padding:1rem;
+button:hover { background:#ff5722; }
+
+#sourceTag,#playlistMeta {
+  width:100%; max-width:960px; text-align:center;
+  font-size:.85rem; margin-bottom:.35rem; color:var(--muted);
 }
 
-/* Mini player */
+#playlist {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+  gap:.8rem; width:100%; max-width:960px;
+  transition:all .2s ease-in-out; min-height:120px;
+}
+
+.video {
+  background:var(--card); border-radius:10px; overflow:hidden;
+  box-shadow:0 2px 6px var(--shadow);
+  transition:transform .2s, box-shadow .2s;
+}
+.video:hover {
+  transform:translateY(-3px);
+  box-shadow:0 4px 12px var(--shadow-accent);
+}
+.thumb { width:100%; aspect-ratio:16/9; object-fit:cover; }
+.title {
+  padding:.4rem .5rem .6rem;
+  font-size:.8rem; white-space:nowrap;
+  overflow:hidden; text-overflow:ellipsis;
+}
+a { color:inherit; text-decoration:none; }
+
+.loading::after {
+  content:"⏳"; margin-left:8px; animation:spin 1.2s linear infinite;
+}
+@keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+#playerOverlay {
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.8);
+  display:none;
+  align-items:center; justify-content:center;
+  z-index:9999; padding:1rem;
+}
+
+/* ---------- Mini Player ---------- */
 #playerCard {
   background:#111;
   width:min(92vw,860px);
@@ -62,8 +90,10 @@ a{color:inherit;text-decoration:none;}
   box-shadow:0 10px 30px rgba(0,0,0,.6);
   position:relative;
   overflow:hidden;
-  transition:all .25s ease;
+  transition:all .35s ease;
 }
+
+/* iframe always fills whatever shape the playerCard takes */
 #playerFrame {
   position:absolute;
   inset:0;
@@ -72,28 +102,54 @@ a{color:inherit;text-decoration:none;}
   border:0;
   background:#000;
   transform-origin:center center;
-  transform:scale(1);
   transition:transform .35s ease;
 }
-#playerCard.zoom-fill #playerFrame { transform:scale(1.3); }
-#playerCard.zoom-portrait #playerFrame { transform:scale(2.2); }
 
+/* --- Zoom Modes --- */
+#playerCard.zoom-fill {
+  aspect-ratio:14/9;             /* slightly taller */
+  width:min(95vw,880px);
+}
+#playerCard.zoom-fill #playerFrame {
+  transform:scale(1.15);
+}
+
+#playerCard.zoom-portrait {
+  aspect-ratio:9/16;             /* tall portrait */
+  width:min(65vw,480px);
+}
+#playerCard.zoom-portrait #playerFrame {
+  transform:scale(1.5);
+}
+
+/* --- Close & Zoom Controls --- */
 #playerClose {
-  position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);
-  border:1px solid #444;color:#fff;border-radius:999px;padding:6px 10px;cursor:pointer;
+  position:absolute; top:8px; right:8px;
+  background:rgba(0,0,0,.6);
+  border:1px solid #444; color:#fff;
+  border-radius:999px; padding:6px 10px;
+  cursor:pointer; z-index:5;         /* ensures visible above iframe */
 }
 #zoomControls {
-  position:absolute;bottom:10px;left:10px;
-  display:flex;gap:.4rem;z-index:10;
+  position:absolute; bottom:10px; left:10px;
+  display:flex; gap:.4rem; z-index:10;
 }
 #zoomControls button {
   background:rgba(255,255,255,0.15);
-  color:#fff;
-  font-size:.8rem;
+  color:#fff; font-size:.8rem;
   padding:3px 6px;
   border:1px solid rgba(255,255,255,0.2);
   border-radius:6px;
+  cursor:pointer;
 }
 #zoomControls button:hover { background:rgba(255,255,255,0.3); }
 
-#sentinel{width:100%;height:40px;text-align:center;margin-top:1rem;}
+#sentinel { width:100%; height:40px; text-align:center; margin-top:1rem; }
+
+/* Rabbit R1 very small screens */
+@media (max-width:260px){
+  #playerCard.zoom-portrait { width:92vw; }
+  #zoomControls { bottom:6px; left:6px; gap:3px; }
+  #zoomControls button { font-size:.7rem; padding:2px 4px; }
+  #playerClose { top:4px; right:4px; padding:4px 8px; }
+}
