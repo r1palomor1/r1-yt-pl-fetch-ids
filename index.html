@@ -2,227 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube Playlist Viewer (Compact Mode)</title>
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #0f0f0f;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem;
-    }
-
-    h1 {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-      color: #ff7043;
-    }
-
-    #controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 1rem;
-    }
-
-    input[type="text"] {
-      padding: 0.4rem 0.6rem;
-      border: none;
-      border-radius: 6px;
-      outline: none;
-      font-size: 0.9rem;
-    }
-
-    #playlistIdInput { width: 260px; }
-    #searchInput { width: 180px; }
-
-    button {
-      background: #ff7043;
-      border: none;
-      border-radius: 6px;
-      color: #fff;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: background 0.2s ease;
-    }
-    button:hover { background: #ff5722; }
-
-    #sourceTag {
-      font-size: 0.8rem;
-      color: #999;
-      margin-bottom: 0.5rem;
-    }
-
-    #playlistMeta {
-      font-size: 0.85rem;
-      color: #ccc;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-
-    /* 👇 Default compact grid */
-    #playlist {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 0.8rem;
-      width: 100%;
-      max-width: 960px;
-      text-align: center;
-      transition: all 0.2s ease-in-out;
-    }
-
-    .video {
-      background: #1c1c1c;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .video:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 12px rgba(255, 112, 67, 0.4);
-    }
-
-    .thumb {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      object-fit: cover;
-    }
-
-    .title {
-      padding: 0.4rem 0.5rem 0.6rem;
-      font-size: 0.8rem;
-      line-height: 1.2;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-    }
-
-    a { color: inherit; text-decoration: none; }
-
-    .loading::after {
-      content: "⏳";
-      animation: spin 1.2s linear infinite;
-      display: inline-block;
-      margin-left: 8px;
-    }
-
-    @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YouTube Playlist Viewer</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <h1>YouTube Playlist Viewer</h1>
 
   <div id="controls">
-    <input id="playlistIdInput" type="text" placeholder="Enter Playlist ID" />
+    <input id="playlistIdInput" type="text" placeholder="Paste playlist URL or ID…" />
     <button id="loadBtn">Load Playlist</button>
-    <input id="searchInput" type="text" placeholder="Search titles..." />
+    <input id="searchInput" type="text" placeholder="Search titles…" />
+    <button id="clearCacheBtn">Clear Cache</button>
   </div>
 
   <div id="sourceTag"></div>
   <div id="playlistMeta"></div>
   <div id="playlist">Loading playlist...</div>
+  <div id="sentinel"></div>
 
-  <script>
-    // 🔹 Core XML Fetcher
-    async function fetchXMLPlaylist(playlistId) {
-      const feed = `https://www.youtube.com/feeds/videos.xml?playlist_id=${playlistId}`;
-      const proxy = `https://corsproxy.io/?${encodeURIComponent(feed)}`;
+  <!-- Mini Player -->
+  <div id="playerOverlay" role="dialog" aria-modal="true">
+    <div id="playerCard">
+      <button id="playerClose" title="Close">✕</button>
+      <iframe id="playerFrame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
 
-      try {
-        const response = await fetch(proxy);
-        const xmlText = await response.text();
-        const xml = new DOMParser().parseFromString(xmlText, "application/xml");
-
-        // Get playlist metadata
-        const playlistTitle = xml.querySelector("feed > title")?.textContent || "Untitled Playlist";
-        const author = xml.querySelector("author > name")?.textContent || "Unknown";
-
-        const entries = Array.from(xml.getElementsByTagName("entry"));
-        const items = entries.map(entry => {
-          const videoIdNode = Array.from(entry.children).find(n => n.localName === "videoId");
-          const titleNode = Array.from(entry.children).find(n => n.localName === "title");
-          const thumbNode = entry.getElementsByTagNameNS("*", "thumbnail")[0];
-
-          const id = videoIdNode?.textContent?.trim();
-          const title = titleNode?.textContent?.trim() || "Untitled";
-          const thumb = thumbNode?.getAttribute("url");
-          return id ? { id, title, thumb } : null;
-        }).filter(Boolean);
-
-        return { meta: { playlistTitle, author }, videos: items };
-      } catch (e) {
-        console.error("❌ XML fetch/parse error:", e);
-        return { meta: null, videos: [] };
-      }
-    }
-
-    // 🔹 Render playlist
-    function renderPlaylist(videos) {
-      const container = document.getElementById("playlist");
-      if (!videos.length) {
-        container.innerText = "No videos found or playlist is private.";
-        return;
-      }
-
-      container.innerHTML = videos.map(v => `
-        <a class="video" href="https://www.youtube.com/watch?v=${v.id}" target="_blank">
-          <img class="thumb" src="${v.thumb}" loading="lazy" alt="${v.title}">
-          <div class="title">${v.title}</div>
-        </a>
-      `).join("");
-    }
-
-    // 🔹 Show playlist info
-    function showMeta(meta, source, count) {
-      const sourceTag = document.getElementById("sourceTag");
-      const metaDiv = document.getElementById("playlistMeta");
-      sourceTag.innerText = `Source: ${source} — ${count} videos loaded`;
-      metaDiv.innerText = `Playlist: ${meta.playlistTitle} | By: ${meta.author}`;
-    }
-
-    // 🔹 Main controller
-    async function showPlaylist(playlistId) {
-      const container = document.getElementById("playlist");
-      container.classList.add("loading");
-      container.innerText = "Fetching playlist...";
-      document.getElementById("sourceTag").innerText = "";
-      document.getElementById("playlistMeta").innerText = "";
-
-      const { meta, videos } = await fetchXMLPlaylist(playlistId);
-
-      container.classList.remove("loading");
-      renderPlaylist(videos);
-      if (meta) showMeta(meta, "XML Fallback", videos.length);
-
-      // store for search
-      window.currentVideos = videos;
-    }
-
-    // 🔹 Search filter
-    document.getElementById("searchInput").addEventListener("input", e => {
-      const query = e.target.value.toLowerCase();
-      const filtered = window.currentVideos.filter(v => v.title.toLowerCase().includes(query));
-      renderPlaylist(filtered);
-      document.getElementById("sourceTag").innerText = `Filtered: ${filtered.length} / ${window.currentVideos.length}`;
-    });
-
-    // 🔹 Load new playlist ID
-    document.getElementById("loadBtn").addEventListener("click", () => {
-      const newId = document.getElementById("playlistIdInput").value.trim();
-      if (!newId) return alert("Please enter a playlist ID.");
-      showPlaylist(newId);
-    });
-
-    // ✅ Initial load
-    const defaultId = "PLMmqTuUsDkRKv4ulZiAYRoWLu1184CAkt";
-    showPlaylist(defaultId);
-  </script>
+  <script src="script.js" defer></script>
 </body>
 </html>
