@@ -25,10 +25,13 @@ h1 { color:var(--accent); margin-bottom:.5rem; }
   display:flex; flex-wrap:wrap; justify-content:center;
   gap:.5rem; margin-bottom:.75rem; width:100%; max-width:960px;
 }
+
 input[type=text] {
   background:#222; color:var(--text);
-  border:none; border-radius:8px; padding:.45rem .6rem; font-size:.9rem;
+  border:none; border-radius:8px;
+  padding:.45rem .6rem; font-size:.9rem;
 }
+
 #playlistIdInput { flex:1 1 320px; min-width:240px; }
 #searchInput { flex:0 1 220px; }
 
@@ -93,7 +96,7 @@ a { color:inherit; text-decoration:none; }
   transition:all .35s ease;
 }
 
-/* iframe always fills whatever shape the playerCard takes */
+/* iframe fills playerCard shape */
 #playerFrame {
   position:absolute;
   inset:0;
@@ -107,44 +110,50 @@ a { color:inherit; text-decoration:none; }
 
 /* --- Zoom Modes --- */
 #playerCard.zoom-fill {
-  aspect-ratio:14/9;             /* slightly taller */
+  aspect-ratio:14/9;
   width:min(95vw,880px);
+  max-height:90vh;
 }
-#playerCard.zoom-fill #playerFrame {
-  transform:scale(1.15);
-}
+#playerCard.zoom-fill #playerFrame { transform:scale(1.15); }
 
 #playerCard.zoom-portrait {
-  aspect-ratio:9/16;             /* tall portrait */
-  width:min(65vw,480px);
+  aspect-ratio:9/16;
+  width:94vw;
+  max-height:94vh;
+  height:auto;
+  transform:translateY(-1vh);
 }
-#playerCard.zoom-portrait #playerFrame {
-  transform:scale(1.5);
-}
+#playerCard.zoom-portrait #playerFrame { transform:scale(1.5); }
 
 /* --- Close & Zoom Controls --- */
 #playerClose {
-  position:absolute; 
+  position:absolute;
   top:8px; right:8px;
   background:rgba(0,0,0,.6);
-  border:1px solid #444; color:#fff;
-  border-radius:999px; padding:6px 10px;
-  cursor:pointer; z-index:5;
+  border:1px solid #444;
+  color:#fff;
+  border-radius:999px;
+  padding:6px 10px;
+  cursor:pointer;
+  z-index:5;
 }
 
-/* ⬇️ Pin zoom controls to bottom of the screen, not inside card */
+/* Keep controls inside card but visible */
 #zoomControls {
-  position:fixed;           /* was absolute */
-  bottom:12px; left:50%;
+  position:absolute;
+  bottom:10px;
+  left:50%;
   transform:translateX(-50%);
-  display:flex; gap:.5rem;
-  z-index:10001;            /* above overlay & iframe */
+  display:flex;
+  gap:.5rem;
+  z-index:10;
 }
 
 #zoomControls button {
   background:rgba(255,255,255,0.15);
-  color:#fff; font-size:.8rem;
-  padding:4px 8px;
+  color:#fff;
+  font-size:.8rem;
+  padding:3px 6px;
   border:1px solid rgba(255,255,255,0.2);
   border-radius:6px;
   cursor:pointer;
@@ -152,8 +161,15 @@ a { color:inherit; text-decoration:none; }
 }
 #zoomControls button:hover { background:rgba(255,255,255,0.3); }
 
-/* Small-screen tweaks for Rabbit R1 */
+#sentinel { width:100%; height:40px; text-align:center; margin-top:1rem; }
+
+/* ---------- Rabbit R1 small screen tweaks ---------- */
 @media (max-width:260px){
+  #playerCard.zoom-portrait {
+    width:96vw;
+    max-height:94vh;
+    transform:translateY(-2vh);
+  }
   #zoomControls {
     bottom:6px;
     gap:4px;
