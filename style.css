@@ -145,13 +145,26 @@ a { color: inherit; text-decoration: none; }
 
 #playerToolbar {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  left: 6px;
+  top: 0;
+  right: 0;
+  left: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 10;
+  padding: 6px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), transparent);
+  z-index: 9999; /* Force above iframe */
+  pointer-events: auto;
+}
+
+#playerCard {
+  position: relative;
+  z-index: 1;
+}
+
+#playerFrame {
+  position: relative;
+  z-index: 0; /* Ensure toolbar is above it */
 }
 
 #sizeButtons {
@@ -213,3 +226,15 @@ a { color: inherit; text-decoration: none; }
   margin-left: 8px;
 }
 @keyframes spin { 0%{transform:rotate(0deg);}100%{transform:rotate(360deg);} }
+
+/* Rabbit R1 tiny-screen optimization */
+@media (max-width: 260px) {
+  #sizeButtons button {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  #playerClose {
+    font-size: 0.8rem;
+    padding: 4px 6px;
+  }
+}
